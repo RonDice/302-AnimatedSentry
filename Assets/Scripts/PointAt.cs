@@ -16,10 +16,12 @@ public enum Axis
 
 public class PointAt : MonoBehaviour
 {
-
-    public Axis aimOrientation;
+    public bool lockAxisX = false;
+    public bool lockAxisY = false;
+    public bool lockAxisZ = false;
 
     private Quaternion startRotation;
+    private Quaternion goalRotation;
 
     private PlayerTargeting playerTargeting;
 
@@ -46,25 +48,36 @@ public class PointAt : MonoBehaviour
 
             Vector3 vToTarget = playerTargeting.target.transform.position - transform.position;
 
-            Vector3 fromVector = Vector3.forward;
+            
 
-            switch (aimOrientation)
+         
+            Quaternion worldRot = Quaternion.LookRotation(vToTarget);
+
+
+            Quaternion localRot = worldRot;
+
+            if (transform.parent)
             {
-                case Axis.Forward: fromVector = Vector3.forward; break;
-                case Axis.Backward: fromVector = Vector3.back; break;
-                case Axis.Left: fromVector = Vector3.left; break;
-                case Axis.Right: fromVector = Vector3.right; break;
-                case Axis.Up: fromVector = Vector3.up; break;
-                case Axis.Down: fromVector = Vector3.down; break;
+                localRot = Quaternion.Inverse(transform.parent.rotation) * worldRot;
             }
 
-            transform.rotation = Quaternion.FromToRotation(fromVector, vToTarget);
+            Vector3 euler = localRot.eulerAngles;
+            if (lockAxisX) euler.x = 0;
+            if (lockAxisY) euler.y = 0;
+            if (lockAxisZ) euler.z = 0;
+
+            localRot.eulerAngles = euler;
+
+            goalRotation = localRot;
             
         
         }
         else
         {
-            transform.localRotation = startRotation;
+            goalRotation = startRotation;
         }
+
+        transform.localRotation = AnimMath.Ease(transform.localRotation, goalRotation, .001f);
+             
     }
 }

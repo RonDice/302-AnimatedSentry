@@ -5,7 +5,7 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
 
-    public Transform target;
+    public PlayerTargeting player;
 
     public Vector3 targetOffset;
 
@@ -23,44 +23,86 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         cam = GetComponentInChildren<Camera>();
+
+        if(player == null)
+        {
+            PlayerTargeting script = FindObjectOfType<PlayerTargeting>();
+
+
+        }
     }
 
    
     void Update()
     {
 
+
+        bool isAiming =  (player && player.target && player.playerWantsToAim) ;
+        
+
         
         // 1. Ease Position
-        if (target)
+        if (player)
         {
-            transform.position = AnimMath.Ease(transform.position, target.position + targetOffset, 0.01f);
+            transform.position = AnimMath.Ease(transform.position, player.transform.position + targetOffset, 0.01f);
         }
 
-        // 2. Set Rotation
+        // 2. Set Rig Rotation
+        if (isAiming)
+        {
+            
 
-        float mx = Input.GetAxis("MouseX");
-        float my = Input.GetAxis("MouseY");
+            Quaternion temp = Quaternion.Euler(pitch, yaw, 0);
+
+            transform.rotation = AnimMath.Ease(transform.rotation, yaw, 0 , .001f);
+        }
+        else
+        {
+
+            float mx = Input.GetAxis("MouseX");
+            float my = Input.GetAxis("MouseY");
 
 
-        yaw += mx * mouseSensitivityX;
-        pitch += my * mouseSensitivityY;
+            yaw += mx * mouseSensitivityX;
+            pitch += my * mouseSensitivityY;
 
+            
 
-        pitch = Mathf.Clamp(pitch, -89, 89);
+            pitch = Mathf.Clamp(pitch, -10, 89);
+            transform.rotation = AnimMath.Ease(transform.rotation, Quaternion.Euler(pitch, yaw, 0), .001f);
 
+        }
 
-        transform.rotation = Quaternion.Euler(pitch, yaw, 0);
+        
 
         //3. Dolly Camera in and out
 
-        dollyDis += Input.mouseScrollDelta.y * mouseSensitivityScroll;
-        dollyDis = Mathf.Clamp(dollyDis, 3, 20);
+
+
+        
+        
+           dollyDis += Input.mouseScrollDelta.y * mouseSensitivityScroll;
+            dollyDis = Mathf.Clamp(dollyDis, 3, 20);
+
 
         // Ease toward dolly position
+        float tempZ = isAiming ? 2 : dollyDis;
         cam.transform.localPosition = AnimMath.Ease(
             cam.transform.localPosition,
-            new Vector3(0, 0, -dollyDis),
+            new Vector3(0, 0, -tempZ),
             .02f);
+
+        //4. Rotate the camera object
+
+        if(isAiming)
+        {
+            Vector3 vToAimTarget = player.target.transform.position - cam.transform.position;
+            cam.transform.rotation = AnimMath.Ease(cam.transform.rotation, Quaternion.LookRotation(vToAimTarget), .001f);
+        }
+        else
+        {
+            cam.transform.localRotation = AnimMath.Ease(cam.transform.localRotation, Quaternion.identity, .001f);
+        }
 
 
     }

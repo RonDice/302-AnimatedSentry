@@ -60,4 +60,15 @@ public static class AnimMath
         return Lerp(current, target, p);
     }
 
+    public static float AngleWrapDegrees(float baseAngle, float angleToBeWrapped)
+    {
+
+
+        while (baseAngle > angleToBeWrapped + 180) angleToBeWrapped += 360;
+        while (baseAngle < angleToBeWrapped - 180) angleToBeWrapped -= 360;
+
+        return angleToBeWrapped;
+
+    }
+
 }

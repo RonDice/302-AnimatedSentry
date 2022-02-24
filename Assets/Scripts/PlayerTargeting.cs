@@ -5,14 +5,21 @@ using UnityEngine;
 public class PlayerTargeting : MonoBehaviour
 {
     public float visionDistance = 20;
+  [Range(1,20)]
+    public float roundsPerSecond = 5;
 
+
+    public Transform boneShoulderRight;
+    public Transform boneShoulderLeft;
 
     public TargetableObject target { get; private set;} 
     public bool playerWantsToAim { get; private set; }
-
+    public bool playerWantsToAttack { get; private set; }
     private List<TargetableObject> validTargets = new List<TargetableObject>();
     private float cooldownScan = 0;
     private float cooldownPickTarget = 0;
+    private float cooldownAttack = 0;
+
 
     void Start()
     {
@@ -20,23 +27,55 @@ public class PlayerTargeting : MonoBehaviour
     }        
     void Update()
     {
+        playerWantsToAttack = Input.GetButton("Fire1");
         playerWantsToAim = Input.GetButton("Fire2");
 
         cooldownScan -= Time.deltaTime;
         cooldownPickTarget -= Time.deltaTime;
+        cooldownAttack -= Time.deltaTime;
 
         if (playerWantsToAim)
         {
+
+            if(target != null)
+            {
+                if (!CanSeeThing(target))
+                {
+                    target = null;
+                }
+            }
+
             if (cooldownScan <= 0) ScanForTargets();
             if (cooldownPickTarget <= 0) PickATarget();
+
+            
+        
+            
         }
+
         else
         {
             target = null;
         }
 
+        DoAttack();
+    }
 
-        print(target);
+    void DoAttack ()
+    {
+        if (cooldownAttack > 0) return;
+        if (!playerWantsToAim) return;
+        if (!playerWantsToAttack) return;
+        if (target == null) return;
+        if (!CanSeeThing(target)) return;
+
+        cooldownAttack = 1f / roundsPerSecond;
+
+        //Spawn projectiles....
+        //or take health away from target
+
+        boneShoulderLeft.localEulerAngles += new Vector3();
+
     }
     void ScanForTargets()
     {
@@ -45,32 +84,41 @@ public class PlayerTargeting : MonoBehaviour
         validTargets.Clear();
 
         TargetableObject[] things = GameObject.FindObjectsOfType<TargetableObject>();
-        foreach(TargetableObject thing in things)
+        foreach (TargetableObject thing in things)
         {
-
-            Vector3 vToThing = thing.transform.position - transform.position;
-
-            // is close enough to see?
-            if(vToThing.sqrMagnitude < visionDistance * visionDistance)
-            {
-                float alignment = Vector3.Dot(transform.forward, vToThing.normalized);
-
-                //is within so many degrees of forward.
-                if(alignment > .25f)
-                {
-                    validTargets.Add(thing);
-                }
-                                
+            if (CanSeeThing(thing))
+            { 
+                validTargets.Add(thing);
             }
-
         }
+
     }
+
+    private bool CanSeeThing(TargetableObject thing)
+    {
+        Vector3 vToThing = thing.transform.position - transform.position;
+
+        // is too far to see?
+        if (vToThing.sqrMagnitude > visionDistance * visionDistance) return false;
+        
+
+        float alignment = Vector3.Dot(transform.forward, vToThing.normalized);      
+         
+        
+        //is within so many degrees of forward.
+        if (alignment > .4f) return false;
+
+
+        return true;
+
+    }
+
     void PickATarget()
     {
 
         if (target) return;
 
-        float closestDistanceSoFar = visionDistance;
+        float closestDistanceSoFar = 0;
 
         foreach(TargetableObject thing in validTargets)
         {
@@ -84,11 +132,7 @@ public class PlayerTargeting : MonoBehaviour
                 target = thing;
             }
 
-
-
         }
-
-
 
     }
 }
