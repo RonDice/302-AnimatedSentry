@@ -1,83 +1,72 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum Axis
-{
-    Forward,
-    Backward,
-    Right,
-    Left,
-    Up,
-    Down
-}
-
-
 
 public class PointAt : MonoBehaviour
 {
+
+    public Transform target;
+
     public bool lockAxisX = false;
     public bool lockAxisY = false;
     public bool lockAxisZ = false;
 
+
     private Quaternion startRotation;
     private Quaternion goalRotation;
 
-    private PlayerTargeting playerTargeting;
-
-
-
-
-    // Start is called before the first frame update
+    //private PlayerTargeting playerTargeting;
+    
     void Start()
     {
-        playerTargeting = GetComponentInParent<PlayerTargeting>();
+        //playerTargeting = GetComponentInParent<PlayerTargeting>();
         startRotation = transform.localRotation;
     }
 
-    // Update is called once per frame
+    
     void Update()
     {
         TurnTowardsTarget();
     }
-    void TurnTowardsTarget()
-    {
-        if (playerTargeting && playerTargeting.target && playerTargeting.playerWantsToAim)
-        {
 
+    private void TurnTowardsTarget() {
+       
+       if(target != null)
+       { 
 
-            Vector3 vToTarget = playerTargeting.target.transform.position - transform.position;
+            Vector3 vToTarget = target.position - transform.position;
+            vToTarget.Normalize();
 
-            
-
-         
-            Quaternion worldRot = Quaternion.LookRotation(vToTarget);
-
-
+            Quaternion worldRot = Quaternion.LookRotation(vToTarget, Vector3.up);
             Quaternion localRot = worldRot;
-
             if (transform.parent)
             {
-                localRot = Quaternion.Inverse(transform.parent.rotation) * worldRot;
+                //convert to local space
+                 localRot = Quaternion.Inverse(transform.parent.rotation) * worldRot;                               
             }
 
             Vector3 euler = localRot.eulerAngles;
-            if (lockAxisX) euler.x = 0;
-            if (lockAxisY) euler.y = 0;
-            if (lockAxisZ) euler.z = 0;
+
+            if (lockAxisX) euler.x = startRotation.eulerAngles.x;
+            if (lockAxisY) euler.y = startRotation.eulerAngles.y;
+            if (lockAxisZ) euler.z = startRotation.eulerAngles.z;
 
             localRot.eulerAngles = euler;
 
+
+
+
             goalRotation = localRot;
+
             
-        
-        }
-        else
-        {
+
+        } else {
             goalRotation = startRotation;
         }
 
         transform.localRotation = AnimMath.Ease(transform.localRotation, goalRotation, .001f);
-             
+
     }
 }

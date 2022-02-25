@@ -5,14 +5,4 @@ using UnityEngine;
 public class TargetableObject : MonoBehaviour
 {
 
-    void Start()
-    {
-        
-    }
-
-   
-    void Update()
-    {
-        
-    }
 }
